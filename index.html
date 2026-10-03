@@ -7,9 +7,11 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <!-- Vue 3 -->
-    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <script src="js/vue-virtual-scroller.umd.js"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
 
+    <link rel="stylesheet" href="js/vue-virtual-scroller.css">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans h-screen flex flex-col overflow-hidden">
@@ -106,8 +108,14 @@
                     </div>
 
                     <!-- Virtual List Body -->
-                    <div v-if="filteredAndSortedContacts.length > 0" class="h-full min-w-max">
-                        <div v-for="item in filteredAndSortedContacts" :key="item.id" class="flex border-b border-gray-100 hover:bg-gray-50 h-11" :class="{'bg-blue-50 hover:bg-blue-100': selectedIds.has(item.id)}">
+                    <recycle-scroller
+                        v-if="filteredAndSortedContacts.length > 0"
+                        class="h-full min-w-max"
+                        :items="filteredAndSortedContacts"
+                        :item-size="45"
+                        key-field="id"
+                        v-slot="{ item }">
+                        <div class="flex border-b border-gray-100 hover:bg-gray-50 h-full" :class="{'bg-blue-50 hover:bg-blue-100': selectedIds.has(item.id)}">
                             <div class="flex-none w-12 p-3 text-center border-r border-gray-100 bg-white sticky left-0 z-10 flex items-center justify-center" :class="{'bg-blue-50': selectedIds.has(item.id)}">
                                 <input type="checkbox" :checked="selectedIds.has(item.id)" @change="toggleSelect(item.id)" class="rounded border-gray-300">
                             </div>
@@ -118,7 +126,8 @@
                                 {{ item[field.id] }}
                             </div>
                         </div>
-                    </div>
+                    </recycle-scroller>
+
                     <div v-else class="p-8 text-center text-gray-500">
                         No contacts found.
                     </div>

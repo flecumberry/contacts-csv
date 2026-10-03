@@ -1,9 +1,11 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import sqlite3
 import uuid
+import os
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='.', static_url_path='/static_assets_dummy_path_to_disable_default_serving')
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 CORS(app)
 
 DB_FILE = 'contacts.db'
@@ -40,6 +42,19 @@ def init_db():
 
 init_db()
 
+
+@app.route('/')
+def index():
+    return app.send_static_file('index.html')
+
+@app.route('/<path:path>')
+def static_proxy(path):
+    # Solo servir los archivos permitidos estáticamente para evitar descargar código o la base de datos
+    if path in ['index.html', 'app.js', 'styles.css'] or path.startswith('js/'):
+        return app.send_static_file(path)
+    return "Not Found", 404
+
+
 @app.route('/contacts', methods=['GET'])
 def get_contacts():
     conn = get_db_connection()
@@ -71,7 +86,7 @@ def add_contact():
 
 @app.route('/contacts/batch', methods=['POST'])
 def add_contacts_batch():
-    data = request.json # Expecting a list of contacts
+    data = request.json
     if not isinstance(data, list):
         return jsonify({'error': 'Expected a list of contacts'}), 400
 
@@ -140,4 +155,4 @@ def delete_contacts_batch():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(host='0.0.0.0', port=8080)
