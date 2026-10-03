@@ -250,6 +250,11 @@ const app = createApp({
 
         const closeModal = () => {
             isModalOpen.value = false;
+            // Clean up merge state on cancel
+            if (isMerging.value) {
+                isMerging.value = false;
+                mergeIdsToDelete.value = [];
+            }
         };
 
         const handleEditSelected = () => {
@@ -284,8 +289,23 @@ const app = createApp({
         const saveContact = async () => {
             if (!validateForm()) return;
 
+
             try {
+                if (isMerging.value) {
+                    // First delete the old merged contacts
+                    await fetch(`${API_URL}/batch`, {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ ids: mergeIdsToDelete.value })
+                    });
+                    // Reset merge state
+                    isMerging.value = false;
+                    mergeIdsToDelete.value = [];
+                    selectedIds.value.clear();
+                }
+
                 if (editingId.value) {
+
                     const response = await fetch(`${API_URL}/${editingId.value}`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
@@ -337,45 +357,70 @@ const app = createApp({
             }
         };
 
+
+        const isMerging = ref(false);
+        const mergeIdsToDelete = ref([]);
+
         const handleMerge = async () => {
             if (selectedIds.value.size < 2) return;
 
             const selected = contacts.value.filter(c => selectedIds.value.has(c.id));
             let mergedData = {};
-            let idsToDelete = Array.from(selectedIds.value);
+            let hasConflicts = false;
 
             FIELDS_SCHEMA.forEach(field => {
-                let firstNonEmpty = '';
+                let uniqueVals = new Set();
                 selected.forEach(c => {
                     const val = (c[field.id] || '').trim();
-                    if (!firstNonEmpty && val !== '') firstNonEmpty = val;
+                    if (val) uniqueVals.add(val);
                 });
-                mergedData[field.id] = firstNonEmpty;
+
+                if (uniqueVals.size > 1) {
+                    hasConflicts = true;
+                    mergedData[field.id] = Array.from(uniqueVals).join(' / ');
+                } else if (uniqueVals.size === 1) {
+                    mergedData[field.id] = Array.from(uniqueVals)[0];
+                } else {
+                    mergedData[field.id] = '';
+                }
             });
 
-            try {
-                // Delete old ones
-                await fetch(`${API_URL}/batch`, {
-                    method: 'DELETE',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ ids: idsToDelete })
-                });
+            if (hasConflicts) {
+                // If there are conflicts, open modal to resolve
+                addToast('Conflicts detected. Please review merged data.', 'warning');
+                isMerging.value = true;
+                mergeIdsToDelete.value = Array.from(selectedIds.value);
 
-                // Add merged one
-                await fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(mergedData)
-                });
+                // Setup modal
+                editingId.value = null; // Threat as new until saved, but keep track it's a merge
+                formErrors.value = {};
+                activeTab.value = 'basic';
+                formData.value = mergedData;
+                isModalOpen.value = true;
+            } else {
+                // No conflicts, auto-save the merge
+                try {
+                    await fetch(`${API_URL}/batch`, {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ ids: Array.from(selectedIds.value) })
+                    });
+                    await fetch(API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(mergedData)
+                    });
 
-                addToast('Contacts merged successfully');
-                selectedIds.value.clear();
-                loadContacts();
-            } catch (e) {
-                console.error(e);
-                addToast('Merge operation failed', 'error');
+                    addToast('Contacts merged successfully');
+                    selectedIds.value.clear();
+                    loadContacts();
+                } catch (e) {
+                    console.error(e);
+                    addToast('Merge operation failed', 'error');
+                }
             }
         };
+
 
         const handleImport = (event) => {
             const file = event.target.files[0];
@@ -453,7 +498,7 @@ const app = createApp({
         return {
             contacts, selectedIds, searchQuery, sortConfig, currentPage, itemsPerPage, totalPages, paginationStart, paginationEnd, paginatedContacts,
             isModalOpen, editingId, formData, formErrors, showColumnDropdown,
-            toasts, fieldsConfig, visibleFields, filteredAndSortedContacts,
+            toasts, fieldsConfig, visibleFields, filteredAndSortedContacts, isMerging,
             isAllSelected, isIndeterminate, formTabs, currentTabFields, activeTab,
             handleSort, toggleSelect, toggleSelectAll, openModal, closeModal,
             handleEditSelected, saveContact, handleDelete, handleMerge,
