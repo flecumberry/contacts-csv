@@ -1,0 +1,27 @@
+Enter port to use [default 8001]: Starting server on port 8001...
+ * Serving Flask app 'app'
+ * Debug mode: off
+[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8001
+ * Running on http://192.168.0.2:8001
+[33mPress CTRL+C to quit[0m
+127.0.0.1 - - [03/Oct/2026 21:16:47] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [03/Oct/2026 21:16:47] "GET /styles.css HTTP/1.1" 200 -
+127.0.0.1 - - [03/Oct/2026 21:16:47] "GET /app.js HTTP/1.1" 200 -
+127.0.0.1 - - [03/Oct/2026 21:16:48] "GET /contacts HTTP/1.1" 200 -
+127.0.0.1 - - [03/Oct/2026 21:16:50] "[35m[1mPOST /contacts HTTP/1.1[0m" 201 -
+127.0.0.1 - - [03/Oct/2026 21:16:50] "GET /contacts HTTP/1.1" 200 -
+127.0.0.1 - - [03/Oct/2026 21:16:51] "[35m[1mPOST /contacts HTTP/1.1[0m" 201 -
+127.0.0.1 - - [03/Oct/2026 21:16:51] "GET /contacts HTTP/1.1" 200 -
+127.0.0.1 - - [03/Oct/2026 21:17:50] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [03/Oct/2026 21:17:50] "GET /styles.css HTTP/1.1" 200 -
+127.0.0.1 - - [03/Oct/2026 21:17:50] "GET /app.js HTTP/1.1" 200 -
+127.0.0.1 - - [03/Oct/2026 21:17:51] "GET /contacts HTTP/1.1" 200 -
+127.0.0.1 - - [03/Oct/2026 21:17:53] "[35m[1mPOST /contacts HTTP/1.1[0m" 201 -
+127.0.0.1 - - [03/Oct/2026 21:17:53] "GET /contacts HTTP/1.1" 200 -
+127.0.0.1 - - [03/Oct/2026 21:17:54] "[35m[1mPOST /contacts HTTP/1.1[0m" 201 -
+127.0.0.1 - - [03/Oct/2026 21:17:54] "GET /contacts HTTP/1.1" 200 -
+127.0.0.1 - - [03/Oct/2026 21:17:58] "DELETE /contacts/batch HTTP/1.1" 200 -
+127.0.0.1 - - [03/Oct/2026 21:17:58] "[35m[1mPOST /contacts HTTP/1.1[0m" 201 -
+127.0.0.1 - - [03/Oct/2026 21:17:58] "GET /contacts HTTP/1.1" 200 -

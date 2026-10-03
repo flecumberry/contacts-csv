@@ -148,4 +148,7 @@ def delete_contacts_batch():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080)
+    port_input = input("Enter port to use [default 8001]: ")
+    port = int(port_input) if port_input.strip() else 8001
+    print(f"Starting server on port {port}...")
+    app.run(host='0.0.0.0', port=port)
