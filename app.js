@@ -1,6 +1,6 @@
 const { createApp, ref, computed, onMounted, reactive } = Vue;
 
-const API_URL = 'http://localhost:5000/contacts';
+const API_URL = '/contacts';
 
 const FIELDS_SCHEMA = [
     { id: "first_name", label: "First Name", tab: 'basic', width: 150, visible: true },
@@ -451,5 +451,5 @@ const app = createApp({
 });
 
 // Register Virtual Scroller plugin
-// app.component('RecycleScroller', window.VueVirtualScroller ? window.VueVirtualScroller.RecycleScroller : {});
+app.component('RecycleScroller', window.VueVirtualScroller ? window.VueVirtualScroller.RecycleScroller : {});
 app.mount('#app');

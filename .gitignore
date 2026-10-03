@@ -1,0 +1,6 @@
+contacts.db
+__pycache__/
+*.pyc
+node_modules/
+package-lock.json
+package.json
