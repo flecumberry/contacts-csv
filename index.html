@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Contact Book (Vue3 + Python)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <!-- Vue 3 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+
+
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans h-screen flex flex-col overflow-hidden">
+    <div id="app" class="h-full flex flex-col">
+        <!-- Toast Notifications -->
+        <div class="fixed top-4 right-4 z-50 flex flex-col gap-2">
+            <div v-for="toast in toasts" :key="toast.id"
+                 class="bg-gray-800 text-white px-4 py-3 rounded shadow-lg transition-all duration-300 transform opacity-100 flex items-center justify-between"
+                 :class="{'bg-red-600': toast.type === 'error', 'bg-green-600': toast.type === 'success'}">
+                <span>{{ toast.message }}</span>
+                <button @click="removeToast(toast.id)" class="ml-4 text-gray-300 hover:text-white">&times;</button>
+            </div>
+        </div>
+
+        <header class="bg-white shadow-sm border-b border-gray-200 px-6 py-4 flex flex-wrap justify-between items-center gap-4 shrink-0">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Contact Book</h1>
+                <p class="text-sm text-gray-500">{{ contacts.length }} record(s)</p>
+            </div>
+
+            <div class="flex-1 max-w-md mx-4">
+                <div class="relative">
+                    <input type="text" v-model="searchQuery" placeholder="Search contacts..."
+                           class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <div class="absolute left-3 top-2.5 text-gray-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap gap-2 items-center">
+                <input type="file" ref="csvFileInput" accept=".csv" class="hidden" @change="handleImport">
+
+                <!-- Column Visibility Dropdown -->
+                <div class="relative">
+                    <button @click="showColumnDropdown = !showColumnDropdown" class="px-3 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition flex items-center gap-1">
+                        Columns <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                    </button>
+                    <div v-if="showColumnDropdown" class="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-md shadow-lg z-50 max-h-96 overflow-y-auto">
+                        <div class="p-2">
+                            <label v-for="field in fieldsConfig" :key="field.id" class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                                <input type="checkbox" v-model="field.visible" class="rounded border-gray-300 text-blue-600 mr-2">
+                                <span class="text-sm text-gray-700">{{ field.label }}</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <button @click="$refs.csvFileInput.click()" class="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
+                    Import CSV
+                </button>
+                <button @click="handleExport" class="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
+                    Export CSV
+                </button>
+
+                <div class="h-6 w-px bg-gray-300 mx-2"></div>
+
+                <button @click="openModal()" class="px-4 py-2 bg-blue-600 border border-transparent rounded-md text-sm font-medium text-white hover:bg-blue-700 transition">
+                    Add New
+                </button>
+                <button @click="handleEditSelected" :disabled="selectedIds.size !== 1" class="px-4 py-2 bg-amber-500 border border-transparent rounded-md text-sm font-medium text-white hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed transition">
+                    Edit Selected
+                </button>
+                <button @click="handleMerge" :disabled="selectedIds.size < 2" class="px-4 py-2 bg-purple-600 border border-transparent rounded-md text-sm font-medium text-white hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition">
+                    Merge Selected
+                </button>
+                <button @click="handleDelete" :disabled="selectedIds.size === 0" class="px-4 py-2 bg-red-600 border border-transparent rounded-md text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition">
+                    Delete
+                </button>
+            </div>
+        </header>
+
+        <main class="flex-1 overflow-hidden p-6">
+            <div class="bg-white border border-gray-200 rounded-lg shadow-sm w-full h-full flex flex-col relative" @click="showColumnDropdown = false">
+                <!-- Virtual Scroller Container -->
+                <div class="table-container flex-1 w-full overflow-auto" id="scroll-container">
+                    <!-- Table Header (Sticky) -->
+                    <div class="sticky top-0 z-20 bg-gray-50 flex border-b border-gray-200 min-w-max">
+                        <div class="flex-none w-12 p-3 text-center border-r border-gray-200 bg-gray-50 sticky left-0 z-30 flex items-center justify-center">
+                            <input type="checkbox" :checked="isAllSelected" :indeterminate.prop="isIndeterminate" @change="toggleSelectAll" class="rounded border-gray-300">
+                        </div>
+                        <div v-for="field in visibleFields" :key="field.id"
+                             class="flex-none p-3 font-semibold text-gray-600 cursor-pointer hover:bg-gray-100 select-none border-r border-gray-200 flex items-center justify-between relative group"
+                             :style="{ width: field.width + 'px', minWidth: '100px' }"
+                             @click="handleSort(field.id)">
+                            <div class="truncate flex-1">{{ field.label }}
+                                <span v-if="sortConfig.key === field.id" class="text-xs ml-1 text-blue-500">
+                                    {{ sortConfig.direction === 'asc' ? '↑' : '↓' }}
+                                </span>
+                            </div>
+                            <!-- Resizer handle -->
+                            <div class="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-blue-300 z-10" @mousedown.stop="startResize($event, field)"></div>
+                        </div>
+                    </div>
+
+                    <!-- Virtual List Body -->
+                    <div v-if="filteredAndSortedContacts.length > 0" class="h-full min-w-max">
+                        <div v-for="item in filteredAndSortedContacts" :key="item.id" class="flex border-b border-gray-100 hover:bg-gray-50 h-11" :class="{'bg-blue-50 hover:bg-blue-100': selectedIds.has(item.id)}">
+                            <div class="flex-none w-12 p-3 text-center border-r border-gray-100 bg-white sticky left-0 z-10 flex items-center justify-center" :class="{'bg-blue-50': selectedIds.has(item.id)}">
+                                <input type="checkbox" :checked="selectedIds.has(item.id)" @change="toggleSelect(item.id)" class="rounded border-gray-300">
+                            </div>
+                            <div v-for="field in visibleFields" :key="field.id"
+                                 class="flex-none p-3 border-r border-gray-100 truncate flex items-center"
+                                 :style="{ width: field.width + 'px' }"
+                                 :title="item[field.id]">
+                                {{ item[field.id] }}
+                            </div>
+                        </div>
+                    </div>
+                    <div v-else class="p-8 text-center text-gray-500">
+                        No contacts found.
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Contact Modal -->
+        <div v-if="isModalOpen" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+                <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50 rounded-t-lg">
+                    <h2 class="text-xl font-semibold text-gray-800">{{ editingId ? 'Edit Contact' : 'Add New Contact' }}</h2>
+                    <button @click="closeModal" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+
+                <!-- Tabs -->
+                <div class="px-6 pt-4 border-b border-gray-200 flex gap-4 overflow-x-auto">
+                    <button v-for="tab in formTabs" :key="tab.id"
+                            @click="activeTab = tab.id"
+                            class="pb-2 text-sm font-medium transition-colors border-b-2 whitespace-nowrap"
+                            :class="activeTab === tab.id ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'">
+                        {{ tab.label }}
+                    </button>
+                </div>
+
+                <div class="p-6 overflow-y-auto flex-1">
+                    <form @submit.prevent="saveContact" class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                        <template v-for="field in currentTabFields" :key="field.id">
+
+                            <!-- Notes Field -->
+                            <div v-if="field.id === 'notes'" class="flex flex-col gap-1 md:col-span-2">
+                                <label :for="'input_'+field.id" class="text-xs font-semibold text-gray-600 uppercase tracking-wider">{{ field.label }}</label>
+                                <textarea :id="'input_'+field.id" v-model="formData[field.id]" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 h-24"></textarea>
+                            </div>
+
+                            <!-- Email Field -->
+                            <div v-else-if="field.id.includes('email')" class="flex flex-col gap-1">
+                                <label :for="'input_'+field.id" class="text-xs font-semibold text-gray-600 uppercase tracking-wider">{{ field.label }}</label>
+                                <input type="email" :id="'input_'+field.id" v-model="formData[field.id]"
+                                       pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
+                                       class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                       :class="{'border-red-500': formErrors[field.id]}">
+                                <span v-if="formErrors[field.id]" class="text-xs text-red-500">{{ formErrors[field.id] }}</span>
+                            </div>
+
+                            <!-- Phone Field -->
+                            <div v-else-if="field.id.includes('phone') || field.id.includes('number')" class="flex flex-col gap-1">
+                                <label :for="'input_'+field.id" class="text-xs font-semibold text-gray-600 uppercase tracking-wider">{{ field.label }}</label>
+                                <input type="tel" :id="'input_'+field.id" v-model="formData[field.id]"
+                                       pattern="^[\d\s\-\+\(\)]*$"
+                                       title="Only numbers, spaces, +, -, (, ) allowed"
+                                       class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+
+                            <!-- Default Text Field -->
+                            <div v-else class="flex flex-col gap-1">
+                                <label :for="'input_'+field.id" class="text-xs font-semibold text-gray-600 uppercase tracking-wider">{{ field.label }}</label>
+                                <input type="text" :id="'input_'+field.id" v-model="formData[field.id]" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+
+                        </template>
+                    </form>
+                </div>
+                <div class="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-end gap-3 rounded-b-lg">
+                    <button @click="closeModal" type="button" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">Cancel</button>
+                    <button @click="saveContact" type="button" class="px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 shadow-sm">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
