@@ -4,7 +4,7 @@ import sqlite3
 import uuid
 import os
 
-app = Flask(__name__, static_folder='.', static_url_path='/static_assets_dummy_path_to_disable_default_serving')
+app = Flask(__name__, static_folder='static', static_url_path='')
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 CORS(app)
 
@@ -46,13 +46,6 @@ init_db()
 @app.route('/')
 def index():
     return app.send_static_file('index.html')
-
-@app.route('/<path:path>')
-def static_proxy(path):
-    # Solo servir los archivos permitidos estáticamente para evitar descargar código o la base de datos
-    if path in ['index.html', 'app.js', 'styles.css'] or path.startswith('js/'):
-        return app.send_static_file(path)
-    return "Not Found", 404
 
 
 @app.route('/contacts', methods=['GET'])
