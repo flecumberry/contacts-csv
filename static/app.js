@@ -60,6 +60,8 @@ const app = createApp({
         const contacts = ref([]);
         const selectedIds = ref(new Set());
         const searchQuery = ref('');
+        const currentPage = ref(1);
+        const itemsPerPage = ref(50);
         const sortConfig = reactive({ key: 'first_name', direction: 'asc' });
 
         // UI State
@@ -182,14 +184,23 @@ const app = createApp({
             return result;
         });
 
+
+        const totalPages = computed(() => Math.ceil(filteredAndSortedContacts.value.length / itemsPerPage.value));
+        const paginationStart = computed(() => (currentPage.value - 1) * itemsPerPage.value);
+        const paginationEnd = computed(() => paginationStart.value + itemsPerPage.value);
+
+        const paginatedContacts = computed(() => {
+            return filteredAndSortedContacts.value.slice(paginationStart.value, paginationEnd.value);
+        });
+
         const isAllSelected = computed(() => {
-            return filteredAndSortedContacts.value.length > 0 &&
-                   filteredAndSortedContacts.value.every(c => selectedIds.value.has(c.id));
+            return paginatedContacts.value.length > 0 &&
+                   paginatedContacts.value.every(c => selectedIds.value.has(c.id));
         });
 
         const isIndeterminate = computed(() => {
-            const selectedCount = filteredAndSortedContacts.value.filter(c => selectedIds.value.has(c.id)).length;
-            return selectedCount > 0 && selectedCount < filteredAndSortedContacts.value.length;
+            const selectedCount = paginatedContacts.value.filter(c => selectedIds.value.has(c.id)).length;
+            return selectedCount > 0 && selectedCount < paginatedContacts.value.length;
         });
 
         const formTabs = TABS;
@@ -215,9 +226,9 @@ const app = createApp({
         const toggleSelectAll = (e) => {
             const newSet = new Set(selectedIds.value);
             if (e.target.checked) {
-                filteredAndSortedContacts.value.forEach(c => newSet.add(c.id));
+                paginatedContacts.value.forEach(c => newSet.add(c.id));
             } else {
-                filteredAndSortedContacts.value.forEach(c => newSet.delete(c.id));
+                paginatedContacts.value.forEach(c => newSet.delete(c.id));
             }
             selectedIds.value = newSet;
         };
@@ -432,6 +443,7 @@ const app = createApp({
 
         // Watch for config changes
         Vue.watch(fieldsConfig, saveFieldsConfig, { deep: true });
+        Vue.watch(searchQuery, () => { currentPage.value = 1; });
 
         onMounted(() => {
             initFieldsConfig();
@@ -439,7 +451,7 @@ const app = createApp({
         });
 
         return {
-            contacts, selectedIds, searchQuery, sortConfig,
+            contacts, selectedIds, searchQuery, sortConfig, currentPage, itemsPerPage, totalPages, paginationStart, paginationEnd, paginatedContacts,
             isModalOpen, editingId, formData, formErrors, showColumnDropdown,
             toasts, fieldsConfig, visibleFields, filteredAndSortedContacts,
             isAllSelected, isIndeterminate, formTabs, currentTabFields, activeTab,
@@ -450,6 +462,6 @@ const app = createApp({
     }
 });
 
-// Register Virtual Scroller plugin
-app.component('RecycleScroller', window.VueVirtualScroller ? window.VueVirtualScroller.RecycleScroller : {});
+
+
 app.mount('#app');

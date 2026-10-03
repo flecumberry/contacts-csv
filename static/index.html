@@ -7,11 +7,11 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <!-- Vue 3 -->
-    <script src="js/vue-virtual-scroller.umd.js"></script>
+
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
 
-    <link rel="stylesheet" href="js/vue-virtual-scroller.css">
+
     <link rel="stylesheet" href="styles.css">
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans h-screen flex flex-col overflow-hidden">
@@ -108,28 +108,58 @@
                     </div>
 
                     <!-- Virtual List Body -->
-                    <recycle-scroller
-                        v-if="filteredAndSortedContacts.length > 0"
-                        class="h-full min-w-max"
-                        :items="filteredAndSortedContacts"
-                        :item-size="45"
-                        key-field="id"
-                        v-slot="{ item }">
-                        <div class="flex border-b border-gray-100 hover:bg-gray-50 h-full" :class="{'bg-blue-50 hover:bg-blue-100': selectedIds.has(item.id)}">
+                    <div v-if="paginatedContacts.length > 0" class="h-full min-w-max">
+                        <div v-for="item in paginatedContacts" :key="item.id" class="flex border-b border-gray-100 hover:bg-gray-50 h-11" :class="{'bg-blue-50 hover:bg-blue-100': selectedIds.has(item.id)}">
                             <div class="flex-none w-12 p-3 text-center border-r border-gray-100 bg-white sticky left-0 z-10 flex items-center justify-center" :class="{'bg-blue-50': selectedIds.has(item.id)}">
                                 <input type="checkbox" :checked="selectedIds.has(item.id)" @change="toggleSelect(item.id)" class="rounded border-gray-300">
                             </div>
                             <div v-for="field in visibleFields" :key="field.id"
                                  class="flex-none p-3 border-r border-gray-100 truncate flex items-center"
-                                 :style="{ width: field.width + 'px' }"
+                                 :style="{ width: field.width + 'px', minWidth: '50px' }"
                                  :title="item[field.id]">
                                 {{ item[field.id] }}
                             </div>
                         </div>
-                    </recycle-scroller>
+                    </div>
 
                     <div v-else class="p-8 text-center text-gray-500">
                         No contacts found.
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white border-t border-gray-200 px-6 py-3 flex items-center justify-between shrink-0">
+                <div class="flex items-center gap-2">
+                    <span class="text-sm text-gray-700">Rows per page:</span>
+                    <select v-model="itemsPerPage" @change="currentPage = 1" class="border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500 py-1 pl-2 pr-6">
+                        <option :value="10">10</option>
+                        <option :value="25">25</option>
+                        <option :value="50">50</option>
+                        <option :value="100">100</option>
+                        <option :value="contacts.length">All</option>
+                    </select>
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <span class="text-sm text-gray-700">
+                        Showing {{ paginationStart + 1 }} to {{ Math.min(paginationEnd, filteredAndSortedContacts.length) }} of {{ filteredAndSortedContacts.length }} entries
+                    </span>
+                    <div class="flex gap-1">
+                        <button @click="currentPage = 1" :disabled="currentPage === 1" class="px-2 py-1 border border-gray-300 rounded-md bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                            «
+                        </button>
+                        <button @click="currentPage--" :disabled="currentPage === 1" class="px-2 py-1 border border-gray-300 rounded-md bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                            ‹
+                        </button>
+                        <span class="px-3 py-1 text-sm font-medium text-gray-700">
+                            Page {{ currentPage }} of {{ totalPages || 1 }}
+                        </span>
+                        <button @click="currentPage++" :disabled="currentPage === totalPages || totalPages === 0" class="px-2 py-1 border border-gray-300 rounded-md bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                            ›
+                        </button>
+                        <button @click="currentPage = totalPages" :disabled="currentPage === totalPages || totalPages === 0" class="px-2 py-1 border border-gray-300 rounded-md bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                            »
+                        </button>
                     </div>
                 </div>
             </div>
