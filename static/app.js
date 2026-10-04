@@ -194,13 +194,13 @@ const app = createApp({
         });
 
         const isAllSelected = computed(() => {
-            return paginatedContacts.value.length > 0 &&
-                   paginatedContacts.value.every(c => selectedIds.value.has(c.id));
+            return filteredAndSortedContacts.value.length > 0 &&
+                   filteredAndSortedContacts.value.every(c => selectedIds.value.has(c.id));
         });
 
         const isIndeterminate = computed(() => {
-            const selectedCount = paginatedContacts.value.filter(c => selectedIds.value.has(c.id)).length;
-            return selectedCount > 0 && selectedCount < paginatedContacts.value.length;
+            const selectedCount = filteredAndSortedContacts.value.filter(c => selectedIds.value.has(c.id)).length;
+            return selectedCount > 0 && selectedCount < filteredAndSortedContacts.value.length;
         });
 
         const formTabs = TABS;
@@ -226,9 +226,9 @@ const app = createApp({
         const toggleSelectAll = (e) => {
             const newSet = new Set(selectedIds.value);
             if (e.target.checked) {
-                paginatedContacts.value.forEach(c => newSet.add(c.id));
+                filteredAndSortedContacts.value.forEach(c => newSet.add(c.id));
             } else {
-                paginatedContacts.value.forEach(c => newSet.delete(c.id));
+                filteredAndSortedContacts.value.forEach(c => newSet.delete(c.id));
             }
             selectedIds.value = newSet;
         };
@@ -489,6 +489,10 @@ const app = createApp({
         // Watch for config changes
         Vue.watch(fieldsConfig, saveFieldsConfig, { deep: true });
         Vue.watch(searchQuery, () => { currentPage.value = 1; });
+        Vue.watch(currentPage, (newVal) => {
+            if (newVal > totalPages.value && totalPages.value > 0) currentPage.value = totalPages.value;
+            if (newVal < 1) currentPage.value = 1;
+        });
 
         onMounted(() => {
             initFieldsConfig();
