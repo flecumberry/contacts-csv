@@ -41,3 +41,7 @@ Enter port to use [default 8001]: Starting server on port 8001...
 127.0.0.1 - - [04/Oct/2026 02:49:03] "GET /contacts HTTP/1.1" 200 -
 127.0.0.1 - - [04/Oct/2026 02:49:05] "[35m[1mPOST /contacts HTTP/1.1[0m" 201 -
 127.0.0.1 - - [04/Oct/2026 02:49:05] "GET /contacts HTTP/1.1" 200 -
+127.0.0.1 - - [04/Oct/2026 11:35:44] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [04/Oct/2026 11:35:44] "GET /styles.css HTTP/1.1" 200 -
+127.0.0.1 - - [04/Oct/2026 11:35:44] "GET /app.js HTTP/1.1" 200 -
+127.0.0.1 - - [04/Oct/2026 11:35:45] "GET /contacts HTTP/1.1" 200 -

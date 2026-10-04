@@ -84,10 +84,10 @@
             </div>
         </header>
 
-        <main class="flex-1 overflow-hidden p-6">
-            <div class="bg-white border border-gray-200 rounded-lg shadow-sm w-full h-full flex flex-col relative" @click="showColumnDropdown = false">
+        <main class="flex-1 min-h-0 overflow-hidden p-4 md:p-6 flex flex-col">
+            <div class="bg-white border border-gray-200 rounded-lg shadow-sm w-full flex-1 min-h-0 flex flex-col relative" @click="showColumnDropdown = false">
                 <!-- Virtual Scroller Container -->
-                <div class="table-container flex-1 w-full overflow-auto" id="scroll-container">
+                <div class="table-container flex-1 min-h-0 w-full overflow-auto" id="scroll-container">
                     <!-- Table Header (Sticky) -->
                     <div class="sticky top-0 z-20 bg-gray-50 flex border-b border-gray-200 min-w-max">
                         <div class="flex-none w-12 p-3 text-center border-r border-gray-200 bg-gray-50 sticky left-0 z-30 flex items-center justify-center">
